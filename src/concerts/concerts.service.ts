@@ -94,13 +94,10 @@ export class ConcertsService {
       throw new NotFoundException(`Концерт з ID ${concertId} не знайдено`);
     }
 
-    // Отримуємо квитки для концерту
-    const tickets = await this.ticketRepository.find({
+    return this.ticketRepository.find({
       where: { concertId },
       order: { seatNumber: 'ASC' },
     });
-
-    return tickets;
   }
 
   async getAvailableTicketsCount(concertId: string): Promise<number> {

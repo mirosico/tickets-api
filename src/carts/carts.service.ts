@@ -3,8 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cart } from './entities/cart.entity';
 import { CartItem } from './entities/cart-item.entity';
-import { Ticket, TicketStatus } from './../tickets/entities/ticket.entity';
-import { RedisService } from './../shared/services/redis.service';
+import { Ticket, TicketStatus } from '../tickets/entities/ticket.entity';
+import { RedisService } from '../shared/services/redis.service';
 import { getErrorMessage } from 'src/shared/utils';
 import { z } from 'zod';
 

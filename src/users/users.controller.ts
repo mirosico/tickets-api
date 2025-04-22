@@ -2,7 +2,7 @@ import { Controller, Get, Put, Body, UseGuards, Req } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedRequest } from '../shared/types';
-import { getError } from '../shared/utils/getError';
+import { getError } from '../shared/utils';
 
 @Controller('users')
 export class UsersController {

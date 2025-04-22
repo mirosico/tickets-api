@@ -22,15 +22,14 @@ export class JwtAuthGuard implements CanActivate {
     const token = authHeader.substring(7); // Видаляємо 'Bearer ' з початку
 
     try {
-      // Для прототипу просто перевіряємо наявність токена
-      // В реальній системі тут буде валідація JWT-токена
+      // TODO: Додати перевірку токена
 
       if (!token) {
         throw new UnauthorizedException('Токен авторизації відсутній');
       }
       // Якщо токен валідний, додаємо об'єкт користувача до запиту
       request.user = {
-        id: 'test-user-id', // В реальній системі тут буде ID користувача з токена
+        id: 'test-user-id', // тут буде ID користувача з токена
         email: 'user@example.com',
         role: 'user',
       };

@@ -1,17 +1,15 @@
-import { Controller, Get, Post, Param, Req } from '@nestjs/common';
+import { Controller, Get, Post, Param, Req, UseGuards } from '@nestjs/common';
 import { TicketQueueService } from './services/ticket-queue.service';
 import { AuthenticatedRequest } from '../shared/types';
-import { getError } from '../shared/utils/getError';
-// TODO: add JwtAuthGuard
-//import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { getError } from '../shared/utils';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('tickets')
 export class TicketsController {
   constructor(private readonly ticketQueueService: TicketQueueService) {}
 
   @Post(':id/queue')
-  // TODO: add JwtAuthGuard
-  //@UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async addToQueue(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     try {
       const userId = req.user.id;
@@ -27,8 +25,7 @@ export class TicketsController {
   }
 
   @Get('queue/:id')
-  // TODO: add JwtAuthGuard
-  //@UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async getQueueStatus(@Param('id') id: string) {
     try {
       const position = await this.ticketQueueService.getPosition(id);

@@ -10,7 +10,6 @@ import { RedisService } from '../../shared/services/redis.service';
 
 @Injectable()
 export class TicketQueueService {
-  private readonly logger = new Logger(TicketQueueService.name);
   private readonly QUEUE_KEY = 'ticket_queue';
 
   constructor(

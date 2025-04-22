@@ -1,5 +1,4 @@
-import { Controller, Get, Delete, Param, Req } from '@nestjs/common';
-// TODO: add JwtAuthGuard
+import { Controller, Get, Delete, Param, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedRequest } from '../shared/types';
 import { getError } from '../shared/utils';
@@ -10,7 +9,7 @@ export class CartsController {
   constructor(private readonly cartsService: CartsService) {}
 
   @Get()
-  //@UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async getCart(@Req() req: AuthenticatedRequest) {
     try {
       const userId = req.user.id;
@@ -28,7 +27,7 @@ export class CartsController {
   }
 
   @Delete('items/:id')
-  //@UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async removeFromCart(
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,

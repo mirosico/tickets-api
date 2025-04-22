@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ConcertsService } from './concerts.service';
-import { getError } from '../shared/utils/getError';
+import { getError } from '../shared/utils';
 
 @Controller('concerts')
 export class ConcertsController {
