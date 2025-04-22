@@ -12,6 +12,7 @@ import { CartItem } from '../carts/entities/cart-item.entity';
 import { Ticket, TicketStatus } from '../tickets/entities/ticket.entity';
 import { RedisService } from '../shared/services/redis.service';
 import { getReservationKey } from '../shared/utils';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class OrdersService {
@@ -28,6 +29,7 @@ export class OrdersService {
     private ticketRepository: Repository<Ticket>,
     private redisService: RedisService,
     private dataSource: DataSource,
+    private notificationsService: NotificationsService,
   ) {}
 
   async findAllForUser(userId: string): Promise<Order[]> {
@@ -119,6 +121,12 @@ export class OrdersService {
       // Підтверджуємо транзакцію
       await queryRunner.commitTransaction();
 
+      this.notificationsService.sendOrderStatusUpdate(
+        userId,
+        order.id,
+        order.status,
+      );
+
       // Повертаємо створене замовлення
       return this.findOne(order.id, userId);
     } catch (error) {
@@ -193,6 +201,12 @@ export class OrdersService {
     // Для прототипу просто змінюємо статус замовлення
 
     order.status = OrderStatus.PAID;
+
+    this.notificationsService.sendOrderStatusUpdate(
+      order.userId,
+      order.id,
+      OrderStatus.PAID,
+    );
     return this.orderRepository.save(order);
   }
 }

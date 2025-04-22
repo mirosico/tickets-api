@@ -14,6 +14,7 @@ import {
 } from './tickets.constants';
 import { SharedModule } from '../shared/shared.module';
 import { CartsModule } from '../carts/carts.module';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { CartsModule } from '../carts/carts.module';
     ScheduleModule.forRoot(),
     SharedModule,
     CartsModule,
+    NotificationsModule,
   ],
   controllers: [TicketsController],
   providers: [

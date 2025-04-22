@@ -12,6 +12,7 @@ import {
   getTimeLeft,
 } from 'src/shared/utils';
 import { reservationSchema } from '../shared/schemas/reservationSchema';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 export interface CartItemWithTimeLeft extends CartItem {
   timeLeft: number;
@@ -30,6 +31,7 @@ export class CartsService {
     @InjectRepository(Ticket)
     private ticketRepository: Repository<Ticket>,
     private redisService: RedisService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // Додає квиток у кошик користувача з тимчасовою резервацією
@@ -96,6 +98,20 @@ export class CartsService {
           reservedUntil: reservedUntil.toISOString(),
         }),
         this.RESERVATION_DURATION,
+      );
+
+      this.notificationsService.sendTicketAddedToCart(
+        userId,
+        ticketId,
+        cartItem.id,
+      );
+
+      this.notificationsService.sendReservationUpdate(
+        userId,
+        ticketId,
+        cartItem.id,
+        cartItem.reservedUntil,
+        TicketStatus.RESERVED,
       );
 
       return cartItem;
@@ -205,6 +221,11 @@ export class CartsService {
       .getMany();
 
     for (const item of expiredItems) {
+      this.notificationsService.sendReservationExpired(
+        item.cart.userId,
+        item.ticketId,
+        item.id,
+      );
       // Блокуємо квиток для атомарної операції
       const lockKey = getLockKey(item.ticketId);
       const lockAcquired = await this.redisService.setLock(lockKey, 10);

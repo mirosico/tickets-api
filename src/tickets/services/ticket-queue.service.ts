@@ -8,6 +8,7 @@ import { QueueItem, QueueStatus } from '../entities/queue-item.entity';
 import { QUEUE_PROCESSOR, QUEUE_PROCESS_JOB } from '../tickets.constants';
 import { RedisService } from '../../shared/services/redis.service';
 import { getLockKey } from '../../shared/utils';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class TicketQueueService {
@@ -21,6 +22,7 @@ export class TicketQueueService {
     @InjectQueue(QUEUE_PROCESSOR)
     private ticketQueue: Queue,
     private redisService: RedisService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // Додає квиток у чергу бронювання
@@ -79,6 +81,14 @@ export class TicketQueueService {
         },
       );
 
+      this.notificationsService.sendQueueUpdate(
+        userId,
+        queueItem.id,
+        queueItem.position,
+        QueueStatus.WAITING,
+        ticketId,
+      );
+
       return queueItem;
     } finally {
       // Знімаємо блокування
@@ -119,6 +129,14 @@ export class TicketQueueService {
     }
 
     queueItem.status = status;
+
+    this.notificationsService.sendQueueUpdate(
+      queueItem.userId,
+      queueItem.id,
+      queueItem.position,
+      status,
+      queueItem.ticketId,
+    );
     return this.queueItemRepository.save(queueItem);
   }
 }

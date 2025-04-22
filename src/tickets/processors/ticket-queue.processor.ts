@@ -9,6 +9,7 @@ import { QueueItem, QueueStatus } from '../entities/queue-item.entity';
 import { RedisService } from '../../shared/services/redis.service';
 import { getErrorMessage, getLockKey } from '../../shared/utils';
 import { CartsService } from '../../carts/carts.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Processor(QUEUE_PROCESSOR)
 export class TicketQueueProcessor {
@@ -21,6 +22,7 @@ export class TicketQueueProcessor {
     private queueItemRepository: Repository<QueueItem>,
     private redisService: RedisService,
     private cartService: CartsService,
+    private notificationService: NotificationsService,
   ) {}
 
   @Process(QUEUE_PROCESS_JOB)
@@ -31,6 +33,13 @@ export class TicketQueueProcessor {
     this.logger.debug(`Обробка елемента черги: ${queueItemId}`);
 
     try {
+      this.notificationService.sendQueueUpdate(
+        job.data.userId,
+        job.data.queueItemId,
+        0, // Позиція 0 означає, що зараз обробляється
+        QueueStatus.PROCESSING,
+        job.data.ticketId,
+      );
       // Оновлюємо статус елемента черги
       await this.queueItemRepository.update(
         { id: queueItemId },
@@ -65,6 +74,14 @@ export class TicketQueueProcessor {
         await this.queueItemRepository.update(
           { id: queueItemId },
           { status: QueueStatus.COMPLETED },
+        );
+
+        this.notificationService.sendQueueUpdate(
+          job.data.userId,
+          job.data.queueItemId,
+          0,
+          QueueStatus.COMPLETED,
+          job.data.ticketId,
         );
 
         this.logger.debug(`Елемент черги оброблено успішно: ${queueItemId}`);

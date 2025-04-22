@@ -5,6 +5,7 @@ import { Concert } from './entities/concert.entity';
 import { Ticket, TicketStatus } from '../tickets/entities/ticket.entity';
 import { RedisService } from '../shared/services/redis.service';
 import { getTicketCountKey } from '../shared/utils';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 interface PaginationOptions {
   page: number;
@@ -31,6 +32,7 @@ export class ConcertsService {
     @InjectRepository(Ticket)
     private ticketRepository: Repository<Ticket>,
     private redisService: RedisService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async findAll({
@@ -45,7 +47,6 @@ export class ConcertsService {
       take: limit,
     });
 
-    // Отримуємо кількість доступних квитків для кожного концерту
     const concertsWithTicketCount = await Promise.all(
       concerts.map(async (concert) => {
         const availableTickets = await this.getAvailableTicketsCount(
@@ -133,6 +134,11 @@ export class ConcertsService {
 
     if (count) {
       const updatedCount = Math.max(0, parseInt(count, 10) - 1);
+
+      this.notificationsService.broadcastTicketAvailabilityChange(
+        concertId,
+        updatedCount,
+      );
       await this.redisService.set(key, updatedCount.toString(), 300);
     }
   }
@@ -143,6 +149,12 @@ export class ConcertsService {
 
     if (count) {
       const updatedCount = parseInt(count, 10) + 1;
+
+      this.notificationsService.broadcastTicketAvailabilityChange(
+        concertId,
+        updatedCount,
+      );
+
       await this.redisService.set(key, updatedCount.toString(), 300);
     }
   }
