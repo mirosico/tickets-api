@@ -24,7 +24,7 @@
       "@types/*": ["src/shared/types/*"],
       "@types": ["src/shared/types"],
       "@services/*": ["src/shared/services/*"],
-      "@shared": ["src/shared/shared.module.ts"],
+      "@shared/*": ["src/shared/*"],
     },
     "incremental": true,
     "skipLibCheck": true,

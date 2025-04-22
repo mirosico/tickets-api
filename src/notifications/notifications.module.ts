@@ -3,7 +3,7 @@ import { NotificationsGateway } from './notifications.gateway';
 import { NotificationsService } from './notifications.service';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { SharedModule } from '@shared';
+import { SharedModule } from '@shared/shared.module';
 
 @Module({
   imports: [

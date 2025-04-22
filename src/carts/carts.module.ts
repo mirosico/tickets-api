@@ -4,7 +4,7 @@ import { CartsController } from './carts.controller';
 import { Cart } from './entities/cart.entity';
 import { CartItem } from './entities/cart-item.entity';
 import { Ticket } from '@tickets/entities/ticket.entity';
-import { SharedModule } from '@shared';
+import { SharedModule } from '@shared/shared.module';
 import { CartsService } from './carts.service';
 import { NotificationsModule } from '@notifications/notifications.module';
 

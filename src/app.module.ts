@@ -18,7 +18,7 @@ import { QueueItem } from '@tickets/entities/queue-item.entity';
 import { ConcertsModule } from '@concerts/concerts.module';
 import { AppController } from './app.controller';
 import { NotificationsModule } from '@notifications/notifications.module';
-import { SharedModule } from '@shared';
+import { SharedModule } from '@shared/shared.module';
 
 @Module({
   imports: [

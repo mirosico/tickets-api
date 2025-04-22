@@ -12,7 +12,7 @@ import {
   QUEUE_PROCESSOR,
   EXPIRED_RESERVATIONS_PROCESSOR,
 } from './tickets.constants';
-import { SharedModule } from '@shared';
+import { SharedModule } from '@shared/shared.module';
 import { CartsModule } from '@carts/carts.module';
 import { NotificationsModule } from '@notifications/notifications.module';
 

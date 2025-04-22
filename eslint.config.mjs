@@ -45,7 +45,7 @@ export default tseslint.config(
             '@types/*': 'src/shared/types/*',
             '@types': 'src/shared/types',
             '@services/*': 'src/shared/services/*',
-            '@shared': 'src/shared/shared.module.ts',
+            '@shared/*': 'src/shared/*',
           },
           checkSourceFilePattern: '**/*.{ts,tsx}',
           relativeDepth: 1,
