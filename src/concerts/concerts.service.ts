@@ -24,6 +24,15 @@ export interface ConcertWithTicketCount extends Concert {
   availableTickets: number;
 }
 
+export interface CreateConcert {
+  title: string;
+  description: string;
+  eventDate: string;
+  venue: string;
+  tickets: number;
+  ticketPrice: number;
+}
+
 @Injectable()
 export class ConcertsService {
   constructor(
@@ -126,6 +135,49 @@ export class ConcertsService {
     );
 
     return count;
+  }
+
+  async create(concertData: CreateConcert): Promise<Concert> {
+    const queryRunner =
+      this.concertRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Створення нового об'єкта концерту
+      const concert = this.concertRepository.create({
+        title: concertData.title,
+        description: concertData.description,
+        eventDate: concertData.eventDate,
+        venue: concertData.venue,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const savedConcert = await queryRunner.manager.save(concert);
+
+      const tickets: Partial<Ticket>[] = [];
+
+      for (let i = 1; i <= concertData.tickets; i++) {
+        tickets.push({
+          concertId: savedConcert.id,
+          seatNumber: `A${i}`,
+          status: TicketStatus.AVAILABLE,
+          price: concertData.ticketPrice,
+        });
+      }
+
+      await queryRunner.manager.save(Ticket, tickets);
+
+      await queryRunner.commitTransaction();
+
+      return savedConcert;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async decrementAvailableTicketsCount(concertId: string): Promise<void> {

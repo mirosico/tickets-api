@@ -1,5 +1,5 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ConcertsService } from './concerts.service';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { ConcertsService, CreateConcert } from './concerts.service';
 import { getError } from '@utils';
 
 @Controller('concerts')
@@ -43,6 +43,19 @@ export class ConcertsController {
 
       return {
         tickets,
+      };
+    } catch (e) {
+      throw getError(e);
+    }
+  }
+
+  @Post()
+  async create(@Body() createConcertDto: CreateConcert) {
+    try {
+      const concert = await this.concertsService.create(createConcertDto);
+
+      return {
+        concert,
       };
     } catch (e) {
       throw getError(e);
