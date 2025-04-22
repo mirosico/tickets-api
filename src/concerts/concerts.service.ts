@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Concert } from './entities/concert.entity';
 import { Ticket, TicketStatus } from '../tickets/entities/ticket.entity';
 import { RedisService } from '../shared/services/redis.service';
+import { getTicketCountKey } from '../shared/utils';
 
 interface PaginationOptions {
   page: number;
@@ -24,8 +25,6 @@ export interface ConcertWithTicketCount extends Concert {
 
 @Injectable()
 export class ConcertsService {
-  private readonly TICKET_COUNT_PREFIX = 'concert:ticket_count:';
-
   constructor(
     @InjectRepository(Concert)
     private concertRepository: Repository<Concert>,
@@ -84,7 +83,7 @@ export class ConcertsService {
     };
   }
 
-  async getTicketsForConcert(concertId: string): Promise<Ticket[]> {
+  async getTicketsForConcert(concertId: string) {
     // Перевіряємо, чи існує концерт
     const concert = await this.concertRepository.findOne({
       where: { id: concertId },
@@ -100,10 +99,10 @@ export class ConcertsService {
     });
   }
 
-  async getAvailableTicketsCount(concertId: string): Promise<number> {
+  async getAvailableTicketsCount(concertId: string) {
     // Спершу перевіряємо, чи є значення в кеші
     const cachedCount = await this.redisService.get(
-      `${this.TICKET_COUNT_PREFIX}${concertId}`,
+      getTicketCountKey(concertId),
     );
 
     if (cachedCount) {
@@ -120,7 +119,7 @@ export class ConcertsService {
 
     // Зберігаємо в кеш на 5 хвилин
     await this.redisService.set(
-      `${this.TICKET_COUNT_PREFIX}${concertId}`,
+      getTicketCountKey(concertId),
       count.toString(),
       300,
     );
@@ -129,7 +128,7 @@ export class ConcertsService {
   }
 
   async decrementAvailableTicketsCount(concertId: string): Promise<void> {
-    const key = `${this.TICKET_COUNT_PREFIX}${concertId}`;
+    const key = getTicketCountKey(concertId);
     const count = await this.redisService.get(key);
 
     if (count) {
@@ -139,7 +138,7 @@ export class ConcertsService {
   }
 
   async incrementAvailableTicketsCount(concertId: string): Promise<void> {
-    const key = `${this.TICKET_COUNT_PREFIX}${concertId}`;
+    const key = getTicketCountKey(concertId);
     const count = await this.redisService.get(key);
 
     if (count) {

@@ -7,3 +7,5 @@ export const reservationSchema = z.object({
     message: 'Invalid date format',
   }),
 });
+
+export type Reservation = z.infer<typeof reservationSchema>;

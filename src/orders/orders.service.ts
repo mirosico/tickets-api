@@ -11,6 +11,7 @@ import { Cart } from '../carts/entities/cart.entity';
 import { CartItem } from '../carts/entities/cart-item.entity';
 import { Ticket, TicketStatus } from '../tickets/entities/ticket.entity';
 import { RedisService } from '../shared/services/redis.service';
+import { getReservationKey } from '../shared/utils';
 
 @Injectable()
 export class OrdersService {
@@ -110,11 +111,9 @@ export class OrdersService {
           { status: TicketStatus.SOLD },
         );
 
-        // Видаляємо інформацію про резервацію з Redis
-        await this.redisService.del(`reservation:${cartItem.ticketId}`);
+        await this.redisService.del(getReservationKey(cartItem.ticketId));
       }
 
-      // Очищаємо кошик
       await queryRunner.manager.remove(cart.items);
 
       // Підтверджуємо транзакцію

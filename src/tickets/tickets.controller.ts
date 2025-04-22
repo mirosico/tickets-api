@@ -3,10 +3,14 @@ import { TicketQueueService } from './services/ticket-queue.service';
 import { AuthenticatedRequest } from '../shared/types';
 import { getError } from '../shared/utils';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CartsService } from '../carts/carts.service';
 
 @Controller('tickets')
 export class TicketsController {
-  constructor(private readonly ticketQueueService: TicketQueueService) {}
+  constructor(
+    private readonly ticketQueueService: TicketQueueService,
+    private readonly cartsService: CartsService,
+  ) {}
 
   @Post(':id/queue')
   @UseGuards(JwtAuthGuard)
@@ -38,6 +42,23 @@ export class TicketsController {
       };
     } catch (error: unknown) {
       throw getError(error);
+    }
+  }
+
+  @Post('process-expired-reservations')
+  @UseGuards(JwtAuthGuard)
+  async processExpiredReservations() {
+    try {
+      const processedCount =
+        await this.cartsService.processExpiredReservations();
+
+      return {
+        success: true,
+        processedCount,
+        message: `Оброблено прострочених резервацій: ${processedCount}`,
+      };
+    } catch (e) {
+      throw getError(e);
     }
   }
 }

@@ -7,6 +7,7 @@ import { Ticket, TicketStatus } from '../entities/ticket.entity';
 import { QueueItem, QueueStatus } from '../entities/queue-item.entity';
 import { QUEUE_PROCESSOR, QUEUE_PROCESS_JOB } from '../tickets.constants';
 import { RedisService } from '../../shared/services/redis.service';
+import { getLockKey } from '../../shared/utils';
 
 @Injectable()
 export class TicketQueueService {
@@ -37,7 +38,7 @@ export class TicketQueueService {
     }
 
     // Блокуємо квиток для атомарної операції
-    const lockKey = `lock:ticket:${ticketId}`;
+    const lockKey = getLockKey(ticketId);
     const lockAcquired = await this.redisService.setLock(lockKey, 10);
 
     if (!lockAcquired) {

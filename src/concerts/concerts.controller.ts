@@ -9,20 +9,14 @@ export class ConcertsController {
   @Get()
   async findAll(@Query('page') page = 1, @Query('limit') limit = 10) {
     try {
-      const concerts = await this.concertsService.findAll({
+      const { items, ...meta } = await this.concertsService.findAll({
         page: +page,
         limit: +limit,
       });
 
       return {
-        concerts: concerts.items,
-        meta: {
-          totalItems: concerts.totalItems,
-          itemCount: concerts.items.length,
-          itemsPerPage: concerts.itemsPerPage,
-          totalPages: concerts.totalPages,
-          currentPage: concerts.currentPage,
-        },
+        concerts: items,
+        meta,
       };
     } catch (e) {
       throw getError(e);

@@ -60,4 +60,12 @@ export class RedisService {
   async expire(key: string, ttl: number) {
     return this.client.expire(key, ttl);
   }
+
+  async flushDb() {
+    return this.client.flushdb();
+  }
+
+  async keys(pattern: string) {
+    return this.client.keys(pattern);
+  }
 }

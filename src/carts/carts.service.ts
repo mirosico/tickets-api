@@ -5,20 +5,17 @@ import { Cart } from './entities/cart.entity';
 import { CartItem } from './entities/cart-item.entity';
 import { Ticket, TicketStatus } from '../tickets/entities/ticket.entity';
 import { RedisService } from '../shared/services/redis.service';
-import { getErrorMessage } from 'src/shared/utils';
-import { z } from 'zod';
+import {
+  getErrorMessage,
+  getLockKey,
+  getReservationKey,
+  getTimeLeft,
+} from 'src/shared/utils';
+import { reservationSchema } from '../shared/schemas/reservationSchema';
 
 export interface CartItemWithTimeLeft extends CartItem {
-  timeLeft: number; // Час, що залишився до закінчення резервації
+  timeLeft: number;
 }
-
-const reservationSchema = z.object({
-  cartItemId: z.string(),
-  userId: z.string(),
-  reservedUntil: z.string().refine((date) => !isNaN(Date.parse(date)), {
-    message: 'Invalid date format',
-  }),
-});
 
 @Injectable()
 export class CartsService {
@@ -45,8 +42,11 @@ export class CartsService {
     }
 
     // Блокуємо квиток для атомарної операції
-    const lockKey = `lock:ticket:${ticketId}`;
-    const lockAcquired = await this.redisService.setLock(lockKey, 10);
+    const lockKey = getLockKey(ticketId);
+    const lockAcquired = await this.redisService.setLock(
+      getLockKey(ticketId),
+      10,
+    );
 
     if (!lockAcquired) {
       throw new Error('Квиток зараз обробляється іншим запитом');
@@ -88,9 +88,8 @@ export class CartsService {
       await this.cartItemRepository.save(cartItem);
 
       // Зберігаємо інформацію про резервацію в Redis для швидкого доступу
-      const reservationKey = `reservation:${ticketId}`;
       await this.redisService.set(
-        reservationKey,
+        getReservationKey(ticketId),
         JSON.stringify({
           cartItemId: cartItem.id,
           userId,
@@ -122,20 +121,18 @@ export class CartsService {
     // Отримуємо актуальний час резервації для кожного квитка
     const items = await Promise.all(
       cart.items.map(async (item) => {
-        const reservationKey = `reservation:${item.ticketId}`;
-        const reservationData = await this.redisService.get(reservationKey);
+        const reservationData = await this.redisService.get(
+          getReservationKey(item.ticketId),
+        );
 
         let timeLeft = 0;
         if (reservationData) {
-          const reservation: unknown = JSON.parse(reservationData);
-          const parsedReservation = reservationSchema.parse(reservation);
-
-          const reservedUntil = new Date(parsedReservation.reservedUntil);
-          const now = new Date();
-          timeLeft = Math.max(
-            0,
-            Math.floor((reservedUntil.getTime() - now.getTime()) / 1000),
+          const reservation = reservationSchema.parse(
+            JSON.parse(reservationData),
           );
+
+          const reservedUntil = new Date(reservation.reservedUntil);
+          timeLeft = getTimeLeft(reservedUntil);
         }
 
         return {
@@ -171,7 +168,7 @@ export class CartsService {
     }
 
     // Блокуємо квиток для атомарної операції
-    const lockKey = `lock:ticket:${cartItem.ticketId}`;
+    const lockKey = getLockKey(cartItem.ticketId);
     const lockAcquired = await this.redisService.setLock(lockKey, 10);
 
     if (!lockAcquired) {
@@ -179,18 +176,14 @@ export class CartsService {
     }
 
     try {
-      // Оновлюємо статус квитка назад на "доступний"
       await this.ticketRepository.update(
         { id: cartItem.ticketId },
         { status: TicketStatus.AVAILABLE },
       );
 
-      // Видаляємо елемент з кошика
       await this.cartItemRepository.remove(cartItem);
 
-      // Видаляємо інформацію про резервацію з Redis
-      const reservationKey = `reservation:${cartItem.ticketId}`;
-      await this.redisService.del(reservationKey);
+      await this.redisService.del(getReservationKey(cartItem.ticketId));
 
       return true;
     } finally {
@@ -213,7 +206,7 @@ export class CartsService {
 
     for (const item of expiredItems) {
       // Блокуємо квиток для атомарної операції
-      const lockKey = `lock:ticket:${item.ticketId}`;
+      const lockKey = getLockKey(item.ticketId);
       const lockAcquired = await this.redisService.setLock(lockKey, 10);
 
       if (!lockAcquired) {
@@ -230,12 +223,8 @@ export class CartsService {
           { status: TicketStatus.AVAILABLE },
         );
 
-        // Видаляємо елемент з кошика
         await this.cartItemRepository.remove(item);
-
-        // Видаляємо інформацію про резервацію з Redis
-        const reservationKey = `reservation:${item.ticketId}`;
-        await this.redisService.del(reservationKey);
+        await this.redisService.del(getReservationKey(item.ticketId));
 
         processedCount++;
       } catch (error: unknown) {

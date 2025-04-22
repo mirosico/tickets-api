@@ -7,7 +7,7 @@ import { QUEUE_PROCESSOR, QUEUE_PROCESS_JOB } from '../tickets.constants';
 import { Ticket, TicketStatus } from '../entities/ticket.entity';
 import { QueueItem, QueueStatus } from '../entities/queue-item.entity';
 import { RedisService } from '../../shared/services/redis.service';
-import { getErrorMessage } from '../../shared/utils';
+import { getErrorMessage, getLockKey } from '../../shared/utils';
 import { CartsService } from '../../carts/carts.service';
 
 @Processor(QUEUE_PROCESSOR)
@@ -38,7 +38,7 @@ export class TicketQueueProcessor {
       );
 
       // Блокуємо квиток для атомарної операції
-      const lockKey = `lock:ticket:${ticketId}`;
+      const lockKey = getLockKey(ticketId);
       const lockAcquired = await this.redisService.setLock(lockKey, 10);
 
       if (!lockAcquired) {
