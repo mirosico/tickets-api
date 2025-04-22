@@ -3,21 +3,22 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
-import { TicketsModule } from './tickets/tickets.module';
-import { UsersModule } from './users/users.module';
-import { CartsModule } from './carts/carts.module';
-import { OrdersModule } from './orders/orders.module';
-import { Concert } from './concerts/entities/concert.entity';
-import { Ticket } from './tickets/entities/ticket.entity';
-import { User } from './users/entities/user.entity';
-import { Cart } from './carts/entities/cart.entity';
-import { CartItem } from './carts/entities/cart-item.entity';
-import { Order } from './orders/entities/order.entity';
-import { OrderItem } from './orders/entities/order-item.entity';
-import { QueueItem } from './tickets/entities/queue-item.entity';
-import { ConcertsModule } from './concerts/concerts.module';
+import { TicketsModule } from '@tickets/tickets.module';
+import { UsersModule } from '@users/users.module';
+import { CartsModule } from '@carts/carts.module';
+import { OrdersModule } from '@orders/orders.module';
+import { Concert } from '@concerts/entities/concert.entity';
+import { Ticket } from '@tickets/entities/ticket.entity';
+import { User } from '@users/entities/user.entity';
+import { Cart } from '@carts/entities/cart.entity';
+import { CartItem } from '@carts/entities/cart-item.entity';
+import { Order } from '@orders/entities/order.entity';
+import { OrderItem } from '@orders/entities/order-item.entity';
+import { QueueItem } from '@tickets/entities/queue-item.entity';
+import { ConcertsModule } from '@concerts/concerts.module';
 import { AppController } from './app.controller';
-import { NotificationsModule } from './notifications/notifications.module';
+import { NotificationsModule } from '@notifications/notifications.module';
+import { SharedModule } from '@shared';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     CartsModule,
     OrdersModule,
     NotificationsModule,
+    SharedModule,
   ],
   controllers: [AppController],
 })

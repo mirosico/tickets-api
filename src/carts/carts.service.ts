@@ -3,16 +3,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cart } from './entities/cart.entity';
 import { CartItem } from './entities/cart-item.entity';
-import { Ticket, TicketStatus } from '../tickets/entities/ticket.entity';
-import { RedisService } from '../shared/services/redis.service';
+import { Ticket, TicketStatus } from '@tickets/entities/ticket.entity';
+import { RedisService } from '@services/redis.service';
 import {
   getErrorMessage,
   getLockKey,
   getReservationKey,
   getTimeLeft,
-} from 'src/shared/utils';
-import { reservationSchema } from '../shared/schemas/reservationSchema';
-import { NotificationsService } from 'src/notifications/notifications.service';
+} from '@utils';
+import { reservationSchema } from '@schemas/reservationSchema';
+import { NotificationsService } from '@notifications/notifications.service';
 
 export interface CartItemWithTimeLeft extends CartItem {
   timeLeft: number;

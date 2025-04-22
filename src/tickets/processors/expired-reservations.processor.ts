@@ -5,8 +5,9 @@ import {
   EXPIRED_RESERVATIONS_PROCESSOR,
   PROCESS_EXPIRED_RESERVATIONS_JOB,
 } from '../tickets.constants';
-import { CartsService } from '../../carts/carts.service';
-import { getErrorMessage } from '../../shared/utils';
+import { CartsService } from '@carts/carts.service';
+
+import { getErrorMessage } from '@utils';
 
 @Processor(EXPIRED_RESERVATIONS_PROCESSOR)
 export class ExpiredReservationsProcessor {

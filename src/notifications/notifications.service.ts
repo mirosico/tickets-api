@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { NotificationsGateway } from './notifications.gateway';
-import { QueueStatus } from '../tickets/entities/queue-item.entity';
-import { TicketStatus } from '../tickets/entities/ticket.entity';
-import { getErrorMessage, getTimeLeft } from '../shared/utils';
+import { QueueStatus } from '@tickets/entities/queue-item.entity';
+import { TicketStatus } from '@tickets/entities/ticket.entity';
+import { getErrorMessage, getTimeLeft } from '@utils';
 
 @Injectable()
 export class NotificationsService {

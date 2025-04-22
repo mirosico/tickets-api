@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Param, Req, UseGuards } from '@nestjs/common';
 import { TicketQueueService } from './services/ticket-queue.service';
-import { AuthenticatedRequest } from '../shared/types';
-import { getError } from '../shared/utils';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CartsService } from '../carts/carts.service';
+import { AuthenticatedRequest } from '@types';
+import { getError } from '@utils';
+import { JwtAuthGuard } from '@auth/guards/jwt-auth.guard';
+import { CartsService } from '@carts/carts.service';
 
 @Controller('tickets')
 export class TicketsController {

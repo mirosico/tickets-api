@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { InjectQueue } from '@nestjs/bull';
@@ -6,9 +6,9 @@ import { Queue } from 'bull';
 import { Ticket, TicketStatus } from '../entities/ticket.entity';
 import { QueueItem, QueueStatus } from '../entities/queue-item.entity';
 import { QUEUE_PROCESSOR, QUEUE_PROCESS_JOB } from '../tickets.constants';
-import { RedisService } from '../../shared/services/redis.service';
-import { getLockKey } from '../../shared/utils';
-import { NotificationsService } from 'src/notifications/notifications.service';
+import { RedisService } from '@services/redis.service';
+import { getLockKey } from '@utils';
+import { NotificationsService } from '@notifications/notifications.service';
 
 @Injectable()
 export class TicketQueueService {

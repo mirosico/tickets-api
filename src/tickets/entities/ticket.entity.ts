@@ -7,7 +7,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Concert } from '../../concerts/entities/concert.entity';
+import { Concert } from '@concerts/entities/concert.entity';
 
 export enum TicketStatus {
   AVAILABLE = 'available',

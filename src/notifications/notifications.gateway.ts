@@ -9,14 +9,10 @@ import {
 import { Server, WebSocket } from 'ws';
 import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { RedisService } from '../shared/services/redis.service';
-import {
-  getErrorMessage,
-  getReservationKeys,
-  getTimeLeft,
-} from '../shared/utils';
+import { RedisService } from '@services/redis.service';
+import { getErrorMessage, getReservationKeys, getTimeLeft } from '@utils';
 import { ConfigService } from '@nestjs/config';
-import { reservationSchema } from '../shared/schemas/reservationSchema';
+import { reservationSchema } from '@schemas/reservationSchema';
 
 interface AuthenticatedClient extends WebSocket {
   userId: string;

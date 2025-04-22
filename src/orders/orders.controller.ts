@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Param, UseGuards, Req } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { getError } from '../shared/utils';
-import { AuthenticatedRequest } from '../shared/types';
+import { JwtAuthGuard } from '@auth/guards/jwt-auth.guard';
+import { getError } from '@utils';
+import { AuthenticatedRequest } from '@types';
 
 @Controller('orders')
 export class OrdersController {

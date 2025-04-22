@@ -1,7 +1,7 @@
 import { Controller, Get, Delete, Param, Req, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { AuthenticatedRequest } from '../shared/types';
-import { getError } from '../shared/utils';
+import { JwtAuthGuard } from '@auth/guards/jwt-auth.guard';
+import { AuthenticatedRequest } from '@types';
+import { getError } from '@utils';
 import { CartsService } from './carts.service';
 
 @Controller('carts')

@@ -2,10 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Concert } from './entities/concert.entity';
-import { Ticket, TicketStatus } from '../tickets/entities/ticket.entity';
-import { RedisService } from '../shared/services/redis.service';
-import { getTicketCountKey } from '../shared/utils';
-import { NotificationsService } from 'src/notifications/notifications.service';
+import { Ticket, TicketStatus } from '@tickets/entities/ticket.entity';
+import { RedisService } from '@services/redis.service';
+import { getTicketCountKey } from '@utils';
+import { NotificationsService } from '@notifications/notifications.service';
 
 interface PaginationOptions {
   page: number;

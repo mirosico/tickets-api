@@ -7,12 +7,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Order, OrderStatus } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
-import { Cart } from '../carts/entities/cart.entity';
-import { CartItem } from '../carts/entities/cart-item.entity';
-import { Ticket, TicketStatus } from '../tickets/entities/ticket.entity';
-import { RedisService } from '../shared/services/redis.service';
-import { getReservationKey } from '../shared/utils';
-import { NotificationsService } from 'src/notifications/notifications.service';
+import { Cart } from '@carts/entities/cart.entity';
+import { CartItem } from '@carts/entities/cart-item.entity';
+import { Ticket, TicketStatus } from '@tickets/entities/ticket.entity';
+import { RedisService } from '@services/redis.service';
+import { getReservationKey } from '@utils';
+import { NotificationsService } from '@notifications/notifications.service';
 
 @Injectable()
 export class OrdersService {

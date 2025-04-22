@@ -7,7 +7,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { Order } from './order.entity';
-import { Ticket } from '../../tickets/entities/ticket.entity';
+import { Ticket } from '@tickets/entities/ticket.entity';
 
 @Entity('order_items')
 export class OrderItem {
