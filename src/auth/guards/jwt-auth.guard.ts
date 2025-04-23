@@ -29,9 +29,8 @@ export class JwtAuthGuard implements CanActivate {
       }
       // Якщо токен валідний, додаємо об'єкт користувача до запиту
       request.user = {
-        id: 'test-user-id', // тут буде ID користувача з токена
+        id: token,
         email: 'user@example.com',
-        role: 'user',
       };
 
       return true;

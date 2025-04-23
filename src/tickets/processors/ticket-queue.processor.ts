@@ -7,7 +7,7 @@ import { QUEUE_PROCESSOR, QUEUE_PROCESS_JOB } from '../tickets.constants';
 import { Ticket, TicketStatus } from '../entities/ticket.entity';
 import { QueueItem, QueueStatus } from '../entities/queue-item.entity';
 import { RedisService } from '@services/redis.service';
-import { getErrorMessage, getLockKey } from '@utils';
+import { getErrorMessage, getLockKey, getQueueKey } from '@utils';
 import { CartsService } from '@carts/carts.service';
 import { NotificationsService } from '@notifications/notifications.service';
 
@@ -86,7 +86,7 @@ export class TicketQueueProcessor {
 
         this.logger.debug(`Елемент черги оброблено успішно: ${queueItemId}`);
       } finally {
-        // Знімаємо блокування
+        await this.redisService.del(getQueueKey(ticketId));
         await this.redisService.releaseLock(lockKey);
       }
     } catch (error: unknown) {

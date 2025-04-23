@@ -7,13 +7,11 @@ import { Ticket, TicketStatus } from '../entities/ticket.entity';
 import { QueueItem, QueueStatus } from '../entities/queue-item.entity';
 import { QUEUE_PROCESSOR, QUEUE_PROCESS_JOB } from '../tickets.constants';
 import { RedisService } from '@services/redis.service';
-import { getLockKey } from '@utils';
+import { getLockKey, getQueueKey } from '@utils';
 import { NotificationsService } from '@notifications/notifications.service';
 
 @Injectable()
 export class TicketQueueService {
-  private readonly QUEUE_KEY = 'ticket_queue';
-
   constructor(
     @InjectRepository(QueueItem)
     private queueItemRepository: Repository<QueueItem>,
@@ -25,9 +23,7 @@ export class TicketQueueService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  // Додає квиток у чергу бронювання
   async addToQueue(userId: string, ticketId: string): Promise<QueueItem> {
-    // Перевіряємо доступність квитка
     const ticket = await this.ticketRepository.findOne({
       where: { id: ticketId },
     });
@@ -39,7 +35,8 @@ export class TicketQueueService {
       throw new Error('Квиток недоступний для бронювання');
     }
 
-    // Блокуємо квиток для атомарної операції
+    console.log('Adding to queue', ticketId, ticket.status, userId);
+
     const lockKey = getLockKey(ticketId);
     const lockAcquired = await this.redisService.setLock(lockKey, 10);
 
@@ -48,12 +45,10 @@ export class TicketQueueService {
     }
 
     try {
-      // Встановлюємо статус квитка як "в черзі"
       ticket.status = TicketStatus.IN_QUEUE;
       await this.ticketRepository.save(ticket);
 
-      // Отримуємо поточну позицію в черзі
-      const position = await this.redisService.incr(this.QUEUE_KEY);
+      const position = await this.redisService.incr(getQueueKey(ticketId));
 
       // Створюємо запис у черзі
       const queueItem = this.queueItemRepository.create({
@@ -109,9 +104,14 @@ export class TicketQueueService {
     return queueItem.position;
   }
 
-  // Отримує загальну кількість елементів у черзі
-  async getTotalQueueSize(): Promise<number> {
-    const count = await this.redisService.get(this.QUEUE_KEY);
+  async getTotalQueueSize(queueItemId: string): Promise<number> {
+    const queueItem = await this.queueItemRepository.findOne({
+      where: { id: queueItemId },
+    });
+    if (!queueItem) {
+      throw new Error('Елемент черги не знайдено');
+    }
+    const count = await this.redisService.get(getQueueKey(queueItem.ticketId));
     return count ? parseInt(count, 10) : 0;
   }
 

@@ -33,7 +33,7 @@ export class TicketsController {
   async getQueueStatus(@Param('id') id: string) {
     try {
       const position = await this.ticketQueueService.getPosition(id);
-      const totalSize = await this.ticketQueueService.getTotalQueueSize();
+      const totalSize = await this.ticketQueueService.getTotalQueueSize(id);
 
       return {
         position,
@@ -42,23 +42,6 @@ export class TicketsController {
       };
     } catch (error: unknown) {
       throw getError(error);
-    }
-  }
-
-  @Post('process-expired-reservations')
-  @UseGuards(JwtAuthGuard)
-  async processExpiredReservations() {
-    try {
-      const processedCount =
-        await this.cartsService.processExpiredReservations();
-
-      return {
-        success: true,
-        processedCount,
-        message: `Оброблено прострочених резервацій: ${processedCount}`,
-      };
-    } catch (e) {
-      throw getError(e);
     }
   }
 }

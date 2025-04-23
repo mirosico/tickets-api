@@ -11,3 +11,5 @@ export const getReservationKey = (ticketId: string) =>
 export const getReservationKeys = () => `${RESERVATION_PREFIX}:*`;
 
 export const getLockKey = (ticketId: string) => `lock:ticket:${ticketId}`;
+
+export const getQueueKey = (ticketId: string) => `ticket_queue:${ticketId}`;

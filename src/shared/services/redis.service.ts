@@ -45,22 +45,6 @@ export class RedisService {
     return this.client.del(key);
   }
 
-  async hset(key: string, field: string, value: string) {
-    return this.client.hset(key, field, value);
-  }
-
-  async hget(key: string, field: string) {
-    return this.client.hget(key, field);
-  }
-
-  async hdel(key: string, field: string) {
-    return this.client.hdel(key, field);
-  }
-
-  async expire(key: string, ttl: number) {
-    return this.client.expire(key, ttl);
-  }
-
   async flushDb() {
     return this.client.flushdb();
   }

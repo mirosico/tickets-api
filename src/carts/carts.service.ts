@@ -6,6 +6,7 @@ import { CartItem } from './entities/cart-item.entity';
 import { Ticket, TicketStatus } from '@tickets/entities/ticket.entity';
 import { RedisService } from '@services/redis.service';
 import {
+  getError,
   getErrorMessage,
   getLockKey,
   getReservationKey,
@@ -41,17 +42,6 @@ export class CartsService {
     if (!cart) {
       cart = this.cartRepository.create({ userId });
       await this.cartRepository.save(cart);
-    }
-
-    // Блокуємо квиток для атомарної операції
-    const lockKey = getLockKey(ticketId);
-    const lockAcquired = await this.redisService.setLock(
-      getLockKey(ticketId),
-      10,
-    );
-
-    if (!lockAcquired) {
-      throw new Error('Квиток зараз обробляється іншим запитом');
     }
 
     try {
@@ -115,9 +105,8 @@ export class CartsService {
       );
 
       return cartItem;
-    } finally {
-      // Знімаємо блокування
-      await this.redisService.releaseLock(lockKey);
+    } catch (e: unknown) {
+      throw getError(e);
     }
   }
 
@@ -218,6 +207,7 @@ export class CartsService {
       .createQueryBuilder('cartItem')
       .where('cartItem.reservedUntil < :now', { now })
       .leftJoinAndSelect('cartItem.ticket', 'ticket')
+      .leftJoinAndSelect('cartItem.cart', 'cart')
       .getMany();
 
     for (const item of expiredItems) {
@@ -226,7 +216,6 @@ export class CartsService {
         item.ticketId,
         item.id,
       );
-      // Блокуємо квиток для атомарної операції
       const lockKey = getLockKey(item.ticketId);
       const lockAcquired = await this.redisService.setLock(lockKey, 10);
 
@@ -238,7 +227,6 @@ export class CartsService {
       }
 
       try {
-        // Оновлюємо статус квитка назад на "доступний"
         await this.ticketRepository.update(
           { id: item.ticketId },
           { status: TicketStatus.AVAILABLE },
@@ -253,7 +241,6 @@ export class CartsService {
           `Помилка при обробці простроченої резервації ${item.id}: ${getErrorMessage(error)}`,
         );
       } finally {
-        // Знімаємо блокування
         await this.redisService.releaseLock(lockKey);
       }
     }

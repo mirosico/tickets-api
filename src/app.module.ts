@@ -19,6 +19,7 @@ import { ConcertsModule } from '@concerts/concerts.module';
 import { AppController } from './app.controller';
 import { NotificationsModule } from '@notifications/notifications.module';
 import { SharedModule } from '@shared/shared.module';
+import { AuthModule } from '@auth/auth.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { SharedModule } from '@shared/shared.module';
     OrdersModule,
     NotificationsModule,
     SharedModule,
+    AuthModule,
   ],
   controllers: [AppController],
 })

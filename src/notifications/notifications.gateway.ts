@@ -50,10 +50,9 @@ export class NotificationsGateway
       // TODO: jwt
 
       const authenticatedClient = client as AuthenticatedClient;
-      const userId = 'userId'; // Отримати userId з токена JWT
+      const userId = token; // Отримати userId з токена JWT
       authenticatedClient.userId = userId;
 
-      // Зберігаємо клієнта у мапі
       if (!this.clients.has(userId)) {
         this.clients.set(userId, []);
       }
