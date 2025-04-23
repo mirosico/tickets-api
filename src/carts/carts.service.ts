@@ -22,7 +22,7 @@ export interface CartItemWithTimeLeft extends CartItem {
 @Injectable()
 export class CartsService {
   private readonly logger = new Logger(CartsService.name);
-  private readonly RESERVATION_DURATION = 15 * 60; // 15 хвилин
+  private readonly RESERVATION_DURATION = 1 * 60; // 15 хвилин
 
   constructor(
     @InjectRepository(Cart)
