@@ -8,6 +8,8 @@ export const getError = (error: unknown) => {
     },
     error instanceof Error
       ? HttpStatus.BAD_REQUEST
-      : HttpStatus.INTERNAL_SERVER_ERROR,
+      : error instanceof HttpException
+        ? error.getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR,
   );
 };

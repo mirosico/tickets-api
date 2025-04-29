@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { Cart } from './entities/cart.entity';
 import { CartItem } from './entities/cart-item.entity';
 import { Ticket, TicketStatus } from '@tickets/entities/ticket.entity';
@@ -159,7 +159,7 @@ export class CartsService {
     });
 
     if (!cart) {
-      throw new Error('Кошик не знайдено');
+      throw new NotFoundException('Cart not found');
     }
 
     // Перевіряємо, чи елемент належить до кошика користувача
@@ -169,7 +169,7 @@ export class CartsService {
     });
 
     if (!cartItem) {
-      throw new Error('Елемент кошика не знайдено');
+      throw new NotFoundException('Cart item not found');
     }
 
     // Блокуємо квиток для атомарної операції
@@ -177,7 +177,7 @@ export class CartsService {
     const lockAcquired = await this.redisService.setLock(lockKey, 10);
 
     if (!lockAcquired) {
-      throw new Error('Квиток зараз обробляється іншим запитом');
+      throw new Error('Ticket is being processed by another request');
     }
 
     try {
