@@ -9,9 +9,9 @@ export class OrderDto {
   id: string;
 
   @ApiProperty({
-    example: 'PENDING',
+    example: 'pending',
     description: 'Order status',
-    enum: ['PENDING', 'PAID', 'CANCELLED'],
+    enum: ['pending', 'paid', 'cancelled'],
   })
   status: string;
 
@@ -32,4 +32,4 @@ export class OrderDto {
     description: 'Order items',
   })
   items: OrderItemDto[];
-} 
+}

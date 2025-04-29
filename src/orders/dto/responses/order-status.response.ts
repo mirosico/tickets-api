@@ -11,8 +11,8 @@ export class OrderStatusResponse {
       },
       status: {
         type: 'string',
-        example: 'CANCELLED',
-        enum: ['PENDING', 'PAID', 'CANCELLED'],
+        example: 'cancelled',
+        enum: ['pending', 'paid', 'cancelled'],
         description: 'Order status',
       },
     },
