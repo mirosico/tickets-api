@@ -3,14 +3,34 @@ import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '@auth/guards/jwt-auth.guard';
 import { getError } from '@utils';
 import { AuthenticatedRequest } from '@types';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { OrderListResponse, OrderResponse, OrderStatusResponse } from './dto';
 
+@ApiTags('Orders')
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  async findAll(@Req() req: AuthenticatedRequest) {
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all user orders' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns list of user orders',
+    type: OrderListResponse,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing authentication token',
+  })
+  async findAll(@Req() req: AuthenticatedRequest): Promise<OrderListResponse> {
     try {
       const userId = req.user.id;
       const orders = await this.ordersService.findAllForUser(userId);
@@ -41,7 +61,27 @@ export class OrdersController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
-  async findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get order by ID' })
+  @ApiParam({
+    name: 'id',
+    description: 'Order ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns order details',
+    type: OrderResponse,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing authentication token',
+  })
+  @ApiResponse({ status: 404, description: 'Order not found' })
+  async findOne(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<OrderResponse> {
     try {
       const userId = req.user.id;
       const order = await this.ordersService.findOne(id, userId);
@@ -72,7 +112,33 @@ export class OrdersController {
 
   @Post('create')
   @UseGuards(JwtAuthGuard)
-  async createFromCart(@Req() req: AuthenticatedRequest) {
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create order from cart' })
+  @ApiResponse({
+    status: 201,
+    description: 'Order created successfully',
+    type: OrderStatusResponse,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing authentication token',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Cart is empty or some tickets have expired reservations',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          examples: ['Cart is empty', 'Some tickets have expired reservations'],
+        },
+      },
+    },
+  })
+  async createFromCart(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<OrderStatusResponse> {
     try {
       const userId = req.user.id;
       const order = await this.ordersService.createFromCart(userId);
@@ -84,7 +150,7 @@ export class OrdersController {
           totalAmount: order.totalAmount,
           createdAt: order.createdAt,
         },
-        message: 'Замовлення успішно створено',
+        message: 'Order has been created successfully',
       };
     } catch (e) {
       throw getError(e);
@@ -93,7 +159,40 @@ export class OrdersController {
 
   @Post(':id/cancel')
   @UseGuards(JwtAuthGuard)
-  async cancelOrder(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cancel order' })
+  @ApiParam({
+    name: 'id',
+    description: 'Order ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Order cancelled successfully',
+    type: OrderStatusResponse,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing authentication token',
+  })
+  @ApiResponse({ status: 404, description: 'Order not found' })
+  @ApiResponse({
+    status: 400,
+    description: 'You can only cancel orders in the "pending" status',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'You can only cancel orders in the "pending" status',
+        },
+      },
+    },
+  })
+  async cancelOrder(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<OrderStatusResponse> {
     try {
       const userId = req.user.id;
       const order = await this.ordersService.cancelOrder(id, userId);
@@ -102,8 +201,10 @@ export class OrdersController {
         order: {
           id: order.id,
           status: order.status,
+          totalAmount: order.totalAmount,
+          createdAt: order.createdAt,
         },
-        message: 'Замовлення успішно скасовано',
+        message: 'Order has been cancelled successfully',
       };
     } catch (e) {
       throw getError(e);
@@ -112,17 +213,60 @@ export class OrdersController {
 
   @Post(':id/pay')
   @UseGuards(JwtAuthGuard)
-  async completePayment(@Param('id') id: string) {
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Complete order payment' })
+  @ApiParam({
+    name: 'id',
+    description: 'Order ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment processed successfully',
+    type: OrderStatusResponse,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing authentication token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Order not found',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'You cannot pay for an order in the current status',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'You cannot pay for an order in the current status',
+        },
+      },
+    },
+  })
+  async completePayment(@Param('id') id: string): Promise<OrderStatusResponse> {
     try {
-      // У реальній системі тут буде перевірка прав доступу до замовлення
       const order = await this.ordersService.completePayment(id);
 
       return {
         order: {
           id: order.id,
           status: order.status,
+          totalAmount: order.totalAmount,
+          createdAt: order.createdAt,
         },
-        message: 'Оплату успішно оброблено',
+        message: 'Payment has been processed successfully',
       };
     } catch (e) {
       throw getError(e);

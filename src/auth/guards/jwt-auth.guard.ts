@@ -16,7 +16,7 @@ export class JwtAuthGuard implements CanActivate {
     const authHeader = request.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Відсутній токен авторизації');
+      throw new UnauthorizedException('Missing authorization token');
     }
 
     const token = authHeader.substring(7); // Видаляємо 'Bearer ' з початку
@@ -25,7 +25,7 @@ export class JwtAuthGuard implements CanActivate {
       // TODO: Додати перевірку токена
 
       if (!token) {
-        throw new UnauthorizedException('Токен авторизації відсутній');
+        throw new UnauthorizedException('Missing authorization token');
       }
       // Якщо токен валідний, додаємо об'єкт користувача до запиту
       request.user = {
@@ -35,7 +35,7 @@ export class JwtAuthGuard implements CanActivate {
 
       return true;
     } catch {
-      throw new UnauthorizedException('Невалідний токен авторизації');
+      throw new UnauthorizedException('Invalid authorization token');
     }
   }
 }

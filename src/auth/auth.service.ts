@@ -19,12 +19,12 @@ export class AuthService {
   async login(email: string, password: string) {
     const user = await this.userRepository.findOne({ where: { email } });
     if (!user) {
-      throw new NotFoundException('Користувача з таким email не знайдено');
+      throw new NotFoundException('User with such email not found');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-      throw new NotFoundException('Невірний пароль');
+      throw new NotFoundException('Invalid password');
     }
 
     // TODO: use real tocken

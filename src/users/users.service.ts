@@ -19,7 +19,7 @@ export class UsersService {
     const user = await this.userRepository.findOne({ where: { id } });
 
     if (!user) {
-      throw new NotFoundException(`Користувача з ID ${id} не знайдено`);
+      throw new NotFoundException(`User with ID ${id} not found`);
     }
 
     return user;
@@ -29,7 +29,7 @@ export class UsersService {
     const user = await this.userRepository.findOne({ where: { email } });
 
     if (!user) {
-      throw new NotFoundException(`Користувача з email ${email} не знайдено`);
+      throw new NotFoundException(`User with email ${email} not found`);
     }
 
     return user;
@@ -46,7 +46,9 @@ export class UsersService {
       where: { email: data.email },
     });
     if (existingUser) {
-      throw new ConflictException(`Користувач з email ${data.email} вже існує`);
+      throw new ConflictException(
+        `User with email ${data.email} already exists`,
+      );
     }
 
     // Хешуємо пароль
@@ -89,7 +91,7 @@ export class UsersService {
       user.passwordHash,
     );
     if (!isPasswordValid) {
-      throw new ConflictException('Неправильний поточний пароль');
+      throw new ConflictException('Invalid current password');
     }
 
     // Хешуємо новий пароль
