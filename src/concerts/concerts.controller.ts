@@ -14,6 +14,7 @@ import {
   ConcertResponse,
   TicketListResponse,
 } from './dto';
+import { ApiCommonResponses } from '@shared/decorators';
 
 @ApiTags('Concerts')
 @Controller('concerts')
@@ -39,6 +40,7 @@ export class ConcertsController {
     description: 'Returns a list of concerts with pagination metadata',
     type: ConcertListResponse,
   })
+  @ApiCommonResponses()
   async findAll(
     @Query('page') page = 1,
     @Query('limit') limit = 10,
@@ -78,7 +80,8 @@ export class ConcertsController {
       properties: {
         message: {
           type: 'string',
-          example: 'Concert not found',
+          example:
+            'Concert with ID 123e4567-e89b-12d3-a456-426614174000 not found',
         },
       },
     },
@@ -115,11 +118,13 @@ export class ConcertsController {
       properties: {
         message: {
           type: 'string',
-          example: 'Concert not found',
+          example:
+            'Concert with ID 123e4567-e89b-12d3-a456-426614174000 not found',
         },
       },
     },
   })
+  @ApiCommonResponses()
   async getTickets(@Param('id') id: string): Promise<TicketListResponse> {
     try {
       const tickets = await this.concertsService.getTicketsForConcert(id);
@@ -139,26 +144,7 @@ export class ConcertsController {
     description: 'Concert created successfully',
     type: ConcertResponse,
   })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid concert data',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          example: 'Invalid concert data',
-        },
-        errors: {
-          type: 'array',
-          items: {
-            type: 'string',
-          },
-          example: ['Title is required', 'Event date must be in the future'],
-        },
-      },
-    },
-  })
+  @ApiCommonResponses()
   async create(
     @Body() createConcertDto: CreateConcertDto,
   ): Promise<ConcertResponse> {

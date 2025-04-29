@@ -71,6 +71,10 @@ export class UsersService {
   ): Promise<User> {
     const user = await this.findOne(id);
 
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
     // Оновлюємо поля
     if (data.name) user.name = data.name;
     if (data.phone) user.phone = data.phone;
@@ -84,6 +88,10 @@ export class UsersService {
     newPassword: string,
   ): Promise<boolean> {
     const user = await this.findOne(id);
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
 
     // Перевіряємо старий пароль
     const isPasswordValid = await bcrypt.compare(

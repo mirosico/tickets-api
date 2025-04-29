@@ -14,6 +14,13 @@ export class QueueItemResponse {
   position: number;
 
   @ApiProperty({
+    example: 'pending',
+    description: 'Queue item status',
+    enum: ['pending', 'processing', 'completed', 'failed'],
+  })
+  status: string;
+
+  @ApiProperty({
     example: '123e4567-e89b-12d3-a456-426614174000',
     description: 'User ID who requested the ticket',
   })

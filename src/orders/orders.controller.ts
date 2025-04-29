@@ -11,6 +11,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { OrderListResponse, OrderResponse, OrderStatusResponse } from './dto';
+import { ApiCommonResponses, ApiAuthResponses } from '@shared/decorators';
 
 @ApiTags('Orders')
 @Controller('orders')
@@ -26,10 +27,8 @@ export class OrdersController {
     description: 'Returns list of user orders',
     type: OrderListResponse,
   })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing authentication token',
-  })
+  @ApiCommonResponses()
+  @ApiAuthResponses()
   async findAll(@Req() req: AuthenticatedRequest): Promise<OrderListResponse> {
     try {
       const userId = req.user.id;
@@ -74,10 +73,21 @@ export class OrdersController {
     type: OrderResponse,
   })
   @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing authentication token',
+    status: 404,
+    description: 'Order not found',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example:
+            'Order with ID 123e4567-e89b-12d3-a456-426614174000 not found',
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 404, description: 'Order not found' })
+  @ApiCommonResponses()
+  @ApiAuthResponses()
   async findOne(
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
@@ -120,10 +130,6 @@ export class OrdersController {
     type: OrderStatusResponse,
   })
   @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing authentication token',
-  })
-  @ApiResponse({
     status: 400,
     description: 'Cart is empty or some tickets have expired reservations',
     schema: {
@@ -136,6 +142,8 @@ export class OrdersController {
       },
     },
   })
+  @ApiCommonResponses()
+  @ApiAuthResponses()
   async createFromCart(
     @Req() req: AuthenticatedRequest,
   ): Promise<OrderStatusResponse> {
@@ -172,10 +180,19 @@ export class OrdersController {
     type: OrderStatusResponse,
   })
   @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing authentication token',
+    status: 404,
+    description: 'Order not found',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example:
+            'Order with ID 123e4567-e89b-12d3-a456-426614174000 not found',
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 404, description: 'Order not found' })
   @ApiResponse({
     status: 400,
     description: 'You can only cancel orders in the "pending" status',
@@ -189,6 +206,8 @@ export class OrdersController {
       },
     },
   })
+  @ApiCommonResponses()
+  @ApiAuthResponses()
   async cancelOrder(
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
@@ -226,10 +245,6 @@ export class OrdersController {
     type: OrderStatusResponse,
   })
   @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing authentication token',
-  })
-  @ApiResponse({
     status: 404,
     description: 'Order not found',
     schema: {
@@ -237,7 +252,8 @@ export class OrdersController {
       properties: {
         message: {
           type: 'string',
-          example: 'Order not found',
+          example:
+            'Order with ID 123e4567-e89b-12d3-a456-426614174000 not found',
         },
       },
     },
@@ -255,6 +271,8 @@ export class OrdersController {
       },
     },
   })
+  @ApiCommonResponses()
+  @ApiAuthResponses()
   async completePayment(@Param('id') id: string): Promise<OrderStatusResponse> {
     try {
       const order = await this.ordersService.completePayment(id);

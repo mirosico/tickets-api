@@ -12,6 +12,8 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { AddToQueueResponse, QueueStatusResponse } from './dto';
+import { ApiAuthResponses } from '@shared/decorators';
+import { ApiCommonResponses } from '@shared/decorators';
 
 @ApiTags('Tickets')
 @Controller('tickets')
@@ -32,17 +34,42 @@ export class TicketsController {
     status: 201,
     description: 'Successfully added to queue',
     type: AddToQueueResponse,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing authentication token',
+    schema: {
+      type: 'object',
+      properties: {
+        queueItem: {
+          type: 'object',
+          example: {
+            id: '123e4567-e89b-12d3-a456-426614174000',
+            position: 1,
+            status: 'pending',
+            userId: '123e4567-e89b-12d3-a456-426614174000',
+            ticketId: '123e4567-e89b-12d3-a456-426614174000',
+            createdAt: '2024-03-20T15:30:00.000Z',
+          },
+        },
+        message: {
+          type: 'string',
+          example:
+            'Your request has been added to the queue. Current position: 1',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 404,
-    description: 'Ticket not found',
+    description: 'Ticket or queue item not found',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Ticket not found' },
+      },
+    },
   })
   @Post(':id/queue')
   @UseGuards(JwtAuthGuard)
+  @ApiCommonResponses()
+  @ApiAuthResponses()
   async addToQueue(
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
@@ -64,24 +91,33 @@ export class TicketsController {
   @ApiBearerAuth()
   @ApiParam({
     name: 'id',
-    description: 'Ticket ID',
+    description: 'Queue item ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @ApiResponse({
     status: 200,
     description: 'Successfully retrieved queue status',
     type: QueueStatusResponse,
+    schema: {
+      type: 'object',
+      properties: {
+        position: { type: 'number', example: 1 },
+        totalSize: { type: 'number', example: 10 },
+        message: {
+          type: 'string',
+          example: 'Your position in queue: 1',
+        },
+      },
+    },
   })
   @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing authentication token',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Queue or ticket not found',
+    status: 404,
+    description: 'Queue item not found',
   })
   @Get('queue/:id')
   @UseGuards(JwtAuthGuard)
+  @ApiCommonResponses()
+  @ApiAuthResponses()
   async getQueueStatus(@Param('id') id: string): Promise<QueueStatusResponse> {
     try {
       const position = await this.ticketQueueService.getPosition(id);

@@ -14,7 +14,7 @@ export class CartItemDto {
   ticketId: string;
 
   @ApiProperty({
-    example: 100.00,
+    example: 100.0,
     description: 'Ticket price',
   })
   price: number;
@@ -46,4 +46,4 @@ export class CartResponse {
     description: 'Cart details with items',
   })
   cart: CartDto;
-} 
+}

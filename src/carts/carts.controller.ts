@@ -12,6 +12,7 @@ import {
 } from '@nestjs/swagger';
 import { CartResponse } from './dto/responses/cart.response';
 import { MessageResponse } from './dto/responses/message.response';
+import { ApiCommonResponses, ApiAuthResponses } from '@shared/decorators';
 
 @ApiTags('Shopping Cart')
 @Controller('carts')
@@ -27,23 +28,8 @@ export class CartsController {
     description: "Returns the user's shopping cart with items",
     type: CartResponse,
   })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          example: 'Unauthorized',
-        },
-        statusCode: {
-          type: 'number',
-          example: 401,
-        },
-      },
-    },
-  })
+  @ApiAuthResponses()
+  @ApiCommonResponses()
   async getCart(@Req() req: AuthenticatedRequest) {
     try {
       const userId = req.user.id;
@@ -76,25 +62,8 @@ export class CartsController {
     type: MessageResponse,
   })
   @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          example: 'Unauthorized',
-        },
-        statusCode: {
-          type: 'number',
-          example: 401,
-        },
-      },
-    },
-  })
-  @ApiResponse({
     status: 404,
-    description: 'Cart item not found',
+    description: 'Cart or cart item not found',
     schema: {
       type: 'object',
       properties: {
@@ -102,13 +71,11 @@ export class CartsController {
           type: 'string',
           example: 'Cart item not found',
         },
-        statusCode: {
-          type: 'number',
-          example: 404,
-        },
       },
     },
   })
+  @ApiAuthResponses()
+  @ApiCommonResponses()
   async removeFromCart(
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
@@ -118,7 +85,7 @@ export class CartsController {
       await this.cartsService.removeFromCart(userId, id);
 
       return {
-        message: 'Квиток успішно видалено з кошика',
+        message: 'Ticket successfully removed from cart',
       };
     } catch (error: unknown) {
       throw getError(error);

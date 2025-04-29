@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '@users/entities/user.entity';
-import { RegisterRequest } from '@auth/types';
+import { RegisterRequestDto } from '@auth/dto';
 
 @Injectable()
 export class AuthService {
@@ -40,13 +40,13 @@ export class AuthService {
     };
   }
 
-  async register(userData: RegisterRequest) {
+  async register(userData: RegisterRequestDto) {
     const existingUser = await this.userRepository.findOne({
       where: { email: userData.email },
     });
     if (existingUser) {
       throw new ConflictException(
-        `Користувач з email ${userData.email} вже існує`,
+        `User with email ${userData.email} already exists`,
       );
     }
 
@@ -78,7 +78,7 @@ export class AuthService {
   async getProfile(userId: string) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new NotFoundException('Користувача не знайдено');
+      throw new NotFoundException('User not found');
     }
 
     return {

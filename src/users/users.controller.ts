@@ -14,6 +14,8 @@ import {
   UpdateProfileRequest,
   ChangePasswordRequest,
 } from './dto';
+import { ApiCommonResponses } from '@shared/decorators';
+import { ApiAuthResponses } from '@shared/decorators';
 
 @ApiTags('Users')
 @Controller('users')
@@ -28,21 +30,21 @@ export class UsersController {
     type: UserProfileResponse,
   })
   @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing authentication token',
+    status: 404,
+    description: 'User not found',
     schema: {
       type: 'object',
       properties: {
         message: {
           type: 'string',
-          examples: [
-            'Missing authorization token',
-            'Invalid authorization token',
-          ],
+          example:
+            'User with ID 123e4567-e89b-12d3-a456-426614174000 not found',
         },
       },
     },
   })
+  @ApiCommonResponses()
+  @ApiAuthResponses()
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   async getProfile(
@@ -74,22 +76,22 @@ export class UsersController {
     type: UserProfileResponse,
   })
   @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing authentication token',
+    status: 404,
+    description: 'User not found',
     schema: {
       type: 'object',
       properties: {
         message: {
           type: 'string',
-          examples: [
-            'Missing authorization token',
-            'Invalid authorization token',
-          ],
+          example:
+            'User with ID 123e4567-e89b-12d3-a456-426614174000 not found',
         },
       },
     },
   })
   @Put('profile')
+  @ApiCommonResponses()
+  @ApiAuthResponses()
   @UseGuards(JwtAuthGuard)
   async updateProfile(
     @Req() req: AuthenticatedRequest,
@@ -129,17 +131,15 @@ export class UsersController {
     },
   })
   @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing authentication token',
+    status: 404,
+    description: 'User not found',
     schema: {
       type: 'object',
       properties: {
         message: {
           type: 'string',
-          examples: [
-            'Missing authorization token',
-            'Invalid authorization token',
-          ],
+          example:
+            'User with ID 123e4567-e89b-12d3-a456-426614174000 not found',
         },
       },
     },

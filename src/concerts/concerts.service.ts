@@ -81,7 +81,7 @@ export class ConcertsService {
     const concert = await this.concertRepository.findOne({ where: { id } });
 
     if (!concert) {
-      throw new NotFoundException(`Концерт з ID ${id} не знайдено`);
+      throw new NotFoundException(`Concert with ID ${id} not found`);
     }
 
     // Додаємо кількість доступних квитків
@@ -100,7 +100,7 @@ export class ConcertsService {
     });
 
     if (!concert) {
-      throw new NotFoundException(`Концерт з ID ${concertId} не знайдено`);
+      throw new NotFoundException(`Concert with ID ${concertId} not found`);
     }
 
     return this.ticketRepository.find({

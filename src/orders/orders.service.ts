@@ -47,7 +47,7 @@ export class OrdersService {
     });
 
     if (!order) {
-      throw new NotFoundException(`Замовлення з ID ${id} не знайдено`);
+      throw new NotFoundException(`Order with ID ${id} not found`);
     }
 
     return order;
@@ -139,6 +139,10 @@ export class OrdersService {
 
   async cancelOrder(id: string, userId: string): Promise<Order> {
     const order = await this.findOne(id, userId);
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${id} not found`);
+    }
 
     if (order.status !== OrderStatus.PENDING) {
       throw new BadRequestException(
