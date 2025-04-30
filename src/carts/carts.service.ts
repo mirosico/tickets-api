@@ -1,9 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
 import { Cart } from './entities/cart.entity';
 import { CartItem } from './entities/cart-item.entity';
-import { Ticket, TicketStatus } from '@tickets/entities/ticket.entity';
+import { TicketStatus } from '@tickets/entities/ticket.entity';
 import { RedisService } from '@services/redis.service';
 import {
   getError,
@@ -14,6 +12,9 @@ import {
 } from '@utils';
 import { reservationSchema } from '@schemas/reservationSchema';
 import { NotificationsService } from '@notifications/notifications.service';
+import { CartRepository } from './repositories/cart.repository';
+import { CartItemRepository } from './repositories/cart-item.repository';
+import { TicketRepository } from '@tickets/repositories/ticket.repository';
 
 export interface CartItemWithTimeLeft extends CartItem {
   timeLeft: number;
@@ -22,18 +23,78 @@ export interface CartItemWithTimeLeft extends CartItem {
 @Injectable()
 export class CartsService {
   private readonly logger = new Logger(CartsService.name);
-  private readonly RESERVATION_DURATION = 1 * 60; // 15 хвилин
+  private readonly RESERVATION_DURATION = 1 * 60; // 15 minutes
 
   constructor(
-    @InjectRepository(Cart)
-    private cartRepository: Repository<Cart>,
-    @InjectRepository(CartItem)
-    private cartItemRepository: Repository<CartItem>,
-    @InjectRepository(Ticket)
-    private ticketRepository: Repository<Ticket>,
-    private redisService: RedisService,
+    private readonly ticketRepository: TicketRepository,
+    private readonly redisService: RedisService,
     private readonly notificationsService: NotificationsService,
+    private readonly cartRepository: CartRepository,
+    private readonly cartItemRepository: CartItemRepository,
   ) {}
+
+  async getUserActiveCart(userId: string): Promise<Cart | null> {
+    return this.cartRepository.findUserActiveCart(userId);
+  }
+
+  async createCart(userId: string): Promise<Cart> {
+    return this.cartRepository.createCart(userId);
+  }
+
+  async addItemToCart(cartId: string, ticketId: string): Promise<void> {
+    const cart = await this.cartRepository.findOneReadOnly({
+      where: { id: cartId },
+      relations: ['items'],
+    });
+
+    if (!cart) {
+      throw new NotFoundException(`Cart with ID ${cartId} not found`);
+    }
+
+    const existingItem = cart.items.find((item) => item.ticketId === ticketId);
+    if (!existingItem) {
+      await this.cartItemRepository.saveWrite({
+        cartId,
+        ticketId,
+        reservedUntil: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes reservation
+      });
+    }
+  }
+
+  async removeItemFromCart(cartId: string, ticketId: string): Promise<void> {
+    const cart = await this.cartRepository.findOneReadOnly({
+      where: { id: cartId },
+      relations: ['items'],
+    });
+
+    if (!cart) {
+      throw new NotFoundException(`Cart with ID ${cartId} not found`);
+    }
+
+    const itemToRemove = cart.items.find((item) => item.ticketId === ticketId);
+    if (itemToRemove) {
+      await this.cartItemRepository.delete(itemToRemove.id);
+    }
+  }
+
+  async clearCart(cartId: string): Promise<void> {
+    const cart = await this.cartRepository.findOneReadOnly({
+      where: { id: cartId },
+      relations: ['items'],
+    });
+
+    if (!cart) {
+      throw new NotFoundException(`Cart with ID ${cartId} not found`);
+    }
+
+    await Promise.all(
+      cart.items.map((item) => this.cartItemRepository.delete(item.id)),
+    );
+  }
+
+  async getCartWithItems(cartId: string): Promise<Cart> {
+    return this.cartRepository.getCartWithItems(cartId);
+  }
 
   // Додає квиток у кошик користувача з тимчасовою резервацією
   async addTicketToCart(userId: string, ticketId: string): Promise<CartItem> {

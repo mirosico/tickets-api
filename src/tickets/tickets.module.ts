@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -8,6 +8,7 @@ import { TicketsController } from './tickets.controller';
 import { TicketQueueService } from './services/ticket-queue.service';
 import { TicketQueueProcessor } from './processors/ticket-queue.processor';
 import { ExpiredReservationsProcessor } from './processors/expired-reservations.processor';
+import { TicketRepository } from './repositories/ticket.repository';
 import {
   QUEUE_PROCESSOR,
   EXPIRED_RESERVATIONS_PROCESSOR,
@@ -47,7 +48,7 @@ import { NotificationsModule } from '@notifications/notifications.module';
     ),
     ScheduleModule.forRoot(),
     SharedModule,
-    CartsModule,
+    forwardRef(() => CartsModule),
     NotificationsModule,
   ],
   controllers: [TicketsController],
@@ -55,7 +56,8 @@ import { NotificationsModule } from '@notifications/notifications.module';
     TicketQueueService,
     TicketQueueProcessor,
     ExpiredReservationsProcessor,
+    TicketRepository,
   ],
-  exports: [TicketQueueService],
+  exports: [TicketQueueService, TicketRepository],
 })
 export class TicketsModule {}
