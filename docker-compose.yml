@@ -65,7 +65,8 @@ services:
   haproxy:
     image: haproxy:latest
     ports:
-      - '5050:5000' # Main PostgreSQL proxy port
+      - '5440:5440' # Write operations port
+      - '5441:5441' # Read operations port
     volumes:
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     networks:
