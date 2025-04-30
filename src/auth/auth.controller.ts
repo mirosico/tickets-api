@@ -1,22 +1,12 @@
-import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { getError } from '@utils';
-import { AuthenticatedRequest } from '@types';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBody,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
-import { ApiCommonResponses, ApiAuthResponses } from '@shared/decorators';
-import {
-  LoginRequestDto,
-  LoginResponseDto,
-  RegisterRequestDto,
-  RegisterResponseDto,
-} from './dto';
+import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { ApiCommonResponses } from '@shared/decorators';
+import { LoginRequestDto } from './dto/requests/login.request.dto';
+import { LoginResponseDto } from './dto/responses/login.response.dto';
+import { RegisterRequestDto } from './dto/requests/register.request.dto';
+import { RegisterResponseDto } from './dto/responses/register.response.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
