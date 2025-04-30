@@ -2,12 +2,16 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '@users/entities/user.entity';
-import { RegisterRequestDto } from '@auth/dto';
+import { RegisterRequestDto } from '@auth/dto/requests/register.request.dto';
+import { LoginResponseDto } from '@auth/dto/responses/login.response.dto';
+import { RegisterResponseDto } from '@auth/dto/responses/register.response.dto';
+import { ProfileResponseDto } from './dto/profile.response.dto';
 
 @Injectable()
 export class AuthService {
@@ -16,7 +20,7 @@ export class AuthService {
     private userRepository: Repository<User>,
   ) {}
 
-  async login(email: string, password: string) {
+  async login(email: string, password: string): Promise<LoginResponseDto> {
     const user = await this.userRepository.findOne({ where: { email } });
     if (!user) {
       throw new NotFoundException('User with such email not found');
@@ -24,10 +28,10 @@ export class AuthService {
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-      throw new NotFoundException('Invalid password');
+      throw new UnauthorizedException('Invalid password');
     }
 
-    // TODO: use real tocken
+    // TODO: use real token
     const token = user.id;
 
     return {
@@ -40,7 +44,7 @@ export class AuthService {
     };
   }
 
-  async register(userData: RegisterRequestDto) {
+  async register(userData: RegisterRequestDto): Promise<RegisterResponseDto> {
     const existingUser = await this.userRepository.findOne({
       where: { email: userData.email },
     });
@@ -51,18 +55,14 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(userData.password, 10);
-
     const user = this.userRepository.create({
       email: userData.email,
-      passwordHash: passwordHash,
+      passwordHash,
       name: userData.name,
       phone: userData.phone,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     });
 
     const savedUser = await this.userRepository.save(user);
-
     const token = savedUser.id;
 
     return {
@@ -75,7 +75,7 @@ export class AuthService {
     };
   }
 
-  async getProfile(userId: string) {
+  async getProfile(userId: string): Promise<ProfileResponseDto> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -90,5 +90,29 @@ export class AuthService {
         createdAt: user.createdAt,
       },
     };
+  }
+
+  async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<boolean> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      oldPassword,
+      user.passwordHash,
+    );
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid current password');
+    }
+
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    user.passwordHash = newPasswordHash;
+    await this.userRepository.save(user);
+    return true;
   }
 }

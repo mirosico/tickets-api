@@ -25,6 +25,7 @@
       "@types": ["src/shared/types"],
       "@services/*": ["src/shared/services/*"],
       "@shared/*": ["src/shared/*"],
+      "@database/*": ["src/database/*"]
     },
     "incremental": true,
     "skipLibCheck": true,

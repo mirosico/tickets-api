@@ -1,0 +1,178 @@
+version: '3.8'
+
+services:
+  # Primary PostgreSQL Database (Write)
+  db-prim:
+    container_name: db-prim
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ticket_booking
+    ports:
+      - '54322:5432'
+    volumes:
+      - db-primary-data:/var/lib/postgresql/data
+      - ./psql/primary:/docker-entrypoint-initdb.d
+    networks:
+      - backend
+    command: >
+      postgres
+      -c wal_level=replica
+      -c max_wal_senders=8
+      -c max_replication_slots=8
+      -c hot_standby=on
+      -c listen_addresses='*'
+      -c max_connections=100
+      -c wal_keep_size=1024
+      -c min_wal_size=1GB
+      -c max_wal_size=2GB
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Secondary PostgreSQL Database (Read only)
+  db-sec-1:
+    container_name: db-sec-1
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ticket_booking
+    ports:
+      - '54332:5432'
+    volumes:
+      - db-secondary-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    user: postgres
+    command: >
+      bash -c "
+      until pg_isready -h db-prim -p 5432 -U postgres; do sleep 1; done &&
+      rm -rf /var/lib/postgresql/data/* &&
+      pg_basebackup -h db-prim -p 5432 -U postgres -D /var/lib/postgresql/data -Fp -Xs -P -R &&
+      chmod 700 /var/lib/postgresql/data &&
+      echo \"primary_conninfo = 'host=db-prim port=5432 user=postgres password=postgres application_name=db_sec_1'\" >> /var/lib/postgresql/data/postgresql.auto.conf &&
+      touch /var/lib/postgresql/data/standby.signal &&
+      postgres"
+    depends_on:
+      db-prim:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Secondary PostgreSQL Database 2 (Read only)
+  db-sec-2:
+    container_name: db-sec-2
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ticket_booking
+    ports:
+      - '54333:5432'
+    volumes:
+      - db-secondary2-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    user: postgres
+    command: >
+      bash -c "
+      until pg_isready -h db-prim -p 5432 -U postgres; do sleep 1; done &&
+      rm -rf /var/lib/postgresql/data/* &&
+      pg_basebackup -h db-prim -p 5432 -U postgres -D /var/lib/postgresql/data -Fp -Xs -P -R &&
+      chmod 700 /var/lib/postgresql/data &&
+      echo \"primary_conninfo = 'host=db-prim port=5432 user=postgres password=postgres application_name=db_sec_2'\" >> /var/lib/postgresql/data/postgresql.auto.conf &&
+      touch /var/lib/postgresql/data/standby.signal &&
+      postgres"
+    depends_on:
+      db-prim:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Secondary PostgreSQL Database 3 (Read only)
+  db-sec-3:
+    container_name: db-sec-3
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ticket_booking
+    ports:
+      - '54334:5432'
+    volumes:
+      - db-secondary3-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    user: postgres
+    command: >
+      bash -c "
+      until pg_isready -h db-prim -p 5432 -U postgres; do sleep 1; done &&
+      rm -rf /var/lib/postgresql/data/* &&
+      pg_basebackup -h db-prim -p 5432 -U postgres -D /var/lib/postgresql/data -Fp -Xs -P -R &&
+      chmod 700 /var/lib/postgresql/data &&
+      echo \"primary_conninfo = 'host=db-prim port=5432 user=postgres password=postgres application_name=db_sec_3'\" >> /var/lib/postgresql/data/postgresql.auto.conf &&
+      touch /var/lib/postgresql/data/standby.signal &&
+      postgres"
+    depends_on:
+      db-prim:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # HAProxy Load Balancer
+  haproxy:
+    container_name: proxy
+    image: haproxy:latest
+    ports:
+      - '5440:5440' # Write operations port
+      - '5441:5441' # Read operations port
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - backend
+    depends_on:
+      db-prim:
+        condition: service_healthy
+      db-sec-1:
+        condition: service_healthy
+      db-sec-2:
+        condition: service_healthy
+      db-sec-3:
+        condition: service_healthy
+    restart: always
+
+  # Redis (optional for caching, session management, etc.)
+  redis:
+    container_name: redis
+    image: redis:latest
+    networks:
+      - backend
+    ports:
+      - '6379:6379'
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  db-primary-data:
+    driver: local
+  db-secondary-data:
+    driver: local
+  db-secondary2-data:
+    driver: local
+  db-secondary3-data:
+    driver: local
