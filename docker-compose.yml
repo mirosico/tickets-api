@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  tickets-api:
+    build:
+      context: ../tickets-api
+      dockerfile: ../tickets-api/Dockerfile
+    container_name: tickets-api
+    ports:
+      - target: ${PORT}
+        published: ${PORT}
+    environment:
+      - NODE_ENV=dev
+      - PORT=${PORT}
+      - DB_HOST=tickets-postgres
+      - DB_PORT=${DB_PORT}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=${DB_DATABASE}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    volumes:
+      - ../tickets-api:/app
+    depends_on:
+      - tickets-postgres
+      - tickets-redis
+  
+  tickets-client:
+    build:
+      context: ../tickets-client
+      dockerfile: ../tickets-client/Dockerfile
+    container_name: tickets-client
+    ports:
+      - target: 80
+        published: 3001
+    environment:
+      - VITE_API_URL=http://tickets-api
+    depends_on:
+      - tickets-api
+
+  tickets-postgres:
+    image: postgres:16-alpine
+    container_name: tickets-postgres
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+    ports:
+      - target: ${DB_PORT}
+        published: ${DB_PORT}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  tickets-redis:
+    image: redis:7-alpine
+    container_name: tickets-redis
+    ports:
+      - target: ${REDIS_PORT}
+        published: ${REDIS_PORT}
+    volumes:
+      - redis-data:/data
+
+volumes:
+  postgres-data:
+  redis-data:
