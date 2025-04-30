@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -13,35 +14,33 @@ import { Ticket, TicketStatus } from '@tickets/entities/ticket.entity';
 import { RedisService } from '@services/redis.service';
 import { getReservationKey } from '@utils';
 import { NotificationsService } from '@notifications/notifications.service';
+import { OrderRepository } from './repositories/order.repository';
+import { OrderItemRepository } from './repositories/order-item.repository';
+import { CartRepository } from '@carts/repositories/cart.repository';
+import { CartItemRepository } from '@carts/repositories/cart-item.repository';
+import { TicketRepository } from '@tickets/repositories/ticket.repository';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
-    @InjectRepository(Order)
-    private orderRepository: Repository<Order>,
-    @InjectRepository(OrderItem)
-    private orderItemRepository: Repository<OrderItem>,
-    @InjectRepository(Cart)
-    private cartRepository: Repository<Cart>,
-    @InjectRepository(CartItem)
-    private cartItemRepository: Repository<CartItem>,
-    @InjectRepository(Ticket)
-    private ticketRepository: Repository<Ticket>,
-    private redisService: RedisService,
-    private dataSource: DataSource,
-    private notificationsService: NotificationsService,
+    private readonly cartRepository: CartRepository,
+    private readonly cartItemRepository: CartItemRepository,
+    private readonly ticketRepository: TicketRepository,
+    private readonly redisService: RedisService,
+    private readonly dataSource: DataSource,
+    private readonly notificationsService: NotificationsService,
+    private readonly orderRepository: OrderRepository,
+    private readonly orderItemRepository: OrderItemRepository,
   ) {}
 
   async findAllForUser(userId: string): Promise<Order[]> {
-    return this.orderRepository.find({
-      where: { userId },
-      relations: ['items', 'items.ticket'],
-      order: { createdAt: 'DESC' },
-    });
+    return this.orderRepository.findUserOrders(userId);
   }
 
   async findOne(id: string, userId: string): Promise<Order> {
-    const order = await this.orderRepository.findOne({
+    const order = await this.orderRepository.findOneReadOnly({
       where: { id, userId },
       relations: ['items', 'items.ticket'],
     });
@@ -54,7 +53,6 @@ export class OrdersService {
   }
 
   async createFromCart(userId: string): Promise<Order> {
-    // Знаходимо кошик користувача
     const cart = await this.cartRepository.findOne({
       where: { userId },
       relations: ['items', 'items.ticket'],
@@ -64,13 +62,11 @@ export class OrdersService {
       throw new BadRequestException('Cart is empty');
     }
 
-    // Розпочинаємо транзакцію
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // Перевіряємо, чи всі елементи кошика мають дійсну резервацію
       const now = new Date();
       const expiredItems = cart.items.filter(
         (item) => item.reservedUntil < now,
@@ -80,31 +76,25 @@ export class OrdersService {
         throw new BadRequestException('Some tickets have expired reservations');
       }
 
-      // Створюємо нове замовлення
       const totalAmount = cart.items.reduce(
         (sum, item) => sum + parseFloat(item.ticket.price.toString()),
         0,
       );
 
-      const order = this.orderRepository.create({
+      const order = await this.orderRepository.createOrder({
         userId,
-        status: OrderStatus.PENDING,
         totalAmount,
       });
 
-      await queryRunner.manager.save(order);
+      const orderItems = cart.items.map((cartItem) => ({
+        orderId: order.id,
+        ticketId: cartItem.ticketId,
+        price: cartItem.ticket.price,
+      }));
 
-      // Створюємо елементи замовлення
+      await this.orderItemRepository.createOrderItems(orderItems);
+
       for (const cartItem of cart.items) {
-        const orderItem = this.orderItemRepository.create({
-          orderId: order.id,
-          ticketId: cartItem.ticketId,
-          price: cartItem.ticket.price,
-        });
-
-        await queryRunner.manager.save(orderItem);
-
-        // Змінюємо статус квитка на проданий
         await queryRunner.manager.update(
           Ticket,
           { id: cartItem.ticketId },
@@ -115,8 +105,6 @@ export class OrdersService {
       }
 
       await queryRunner.manager.remove(cart.items);
-
-      // Підтверджуємо транзакцію
       await queryRunner.commitTransaction();
 
       this.notificationsService.sendOrderStatusUpdate(
@@ -125,14 +113,11 @@ export class OrdersService {
         order.status,
       );
 
-      // Повертаємо створене замовлення
       return this.findOne(order.id, userId);
     } catch (error) {
-      // Відкочуємо транзакцію у разі помилки
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
-      // Звільняємо ресурси
       await queryRunner.release();
     }
   }
@@ -150,17 +135,13 @@ export class OrdersService {
       );
     }
 
-    // Розпочинаємо транзакцію
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // Змінюємо статус замовлення
-      order.status = OrderStatus.CANCELLED;
-      await queryRunner.manager.save(order);
+      await this.orderRepository.cancelOrder(order.id);
 
-      // Повертаємо квитки назад у продаж
       for (const orderItem of order.items) {
         await queryRunner.manager.update(
           Ticket,
@@ -169,22 +150,19 @@ export class OrdersService {
         );
       }
 
-      // Підтверджуємо транзакцію
       await queryRunner.commitTransaction();
 
-      return order;
+      return this.findOne(id, userId);
     } catch (error) {
-      // Відкочуємо транзакцію у разі помилки
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
-      // Звільняємо ресурси
       await queryRunner.release();
     }
   }
 
   async completePayment(id: string): Promise<Order> {
-    const order = await this.orderRepository.findOne({
+    const order = await this.orderRepository.findOneReadOnly({
       where: { id },
       relations: ['items'],
     });
@@ -199,16 +177,7 @@ export class OrdersService {
       );
     }
 
-    // Тут буде код для обробки оплати через платіжну систему
-    // Для прототипу просто змінюємо статус замовлення
-
-    order.status = OrderStatus.PAID;
-
-    this.notificationsService.sendOrderStatusUpdate(
-      order.userId,
-      order.id,
-      OrderStatus.PAID,
-    );
-    return this.orderRepository.save(order);
+    await this.orderRepository.updateOrderStatus(id, OrderStatus.PAID);
+    return this.findOne(id, order.userId);
   }
 }

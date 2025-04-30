@@ -6,6 +6,7 @@ import { Ticket, TicketStatus } from '@tickets/entities/ticket.entity';
 import { RedisService } from '@services/redis.service';
 import { getTicketCountKey } from '@utils';
 import { NotificationsService } from '@notifications/notifications.service';
+import { ConcertRepository } from './repositories/concert.repository';
 
 interface PaginationOptions {
   page: number;
@@ -36,12 +37,11 @@ export interface CreateConcert {
 @Injectable()
 export class ConcertsService {
   constructor(
-    @InjectRepository(Concert)
-    private concertRepository: Repository<Concert>,
     @InjectRepository(Ticket)
     private ticketRepository: Repository<Ticket>,
     private redisService: RedisService,
     private notificationsService: NotificationsService,
+    private readonly concertRepository: ConcertRepository,
   ) {}
 
   async findAll({
@@ -78,13 +78,14 @@ export class ConcertsService {
   }
 
   async findOne(id: string): Promise<ConcertWithTicketCount> {
-    const concert = await this.concertRepository.findOne({ where: { id } });
+    const concert = await this.concertRepository.findOneReadOnly({
+      where: { id },
+    });
 
     if (!concert) {
       throw new NotFoundException(`Concert with ID ${id} not found`);
     }
 
-    // Додаємо кількість доступних квитків
     const availableTickets = await this.getAvailableTicketsCount(id);
 
     return {
@@ -94,8 +95,7 @@ export class ConcertsService {
   }
 
   async getTicketsForConcert(concertId: string) {
-    // Перевіряємо, чи існує концерт
-    const concert = await this.concertRepository.findOne({
+    const concert = await this.concertRepository.findOneReadOnly({
       where: { id: concertId },
     });
 
@@ -110,7 +110,6 @@ export class ConcertsService {
   }
 
   async getAvailableTicketsCount(concertId: string) {
-    // Спершу перевіряємо, чи є значення в кеші
     const cachedCount = await this.redisService.get(
       getTicketCountKey(concertId),
     );
@@ -119,7 +118,6 @@ export class ConcertsService {
       return parseInt(cachedCount, 10);
     }
 
-    // Якщо немає в кеші, рахуємо з бази даних
     const count = await this.ticketRepository.count({
       where: {
         concertId,
@@ -127,7 +125,6 @@ export class ConcertsService {
       },
     });
 
-    // Зберігаємо в кеш на 5 хвилин
     await this.redisService.set(
       getTicketCountKey(concertId),
       count.toString(),
@@ -144,23 +141,18 @@ export class ConcertsService {
     await queryRunner.startTransaction();
 
     try {
-      // Створення нового об'єкта концерту
-      const concert = this.concertRepository.create({
+      const concert = await this.concertRepository.createConcert({
         title: concertData.title,
         description: concertData.description,
-        eventDate: concertData.eventDate,
+        eventDate: new Date(concertData.eventDate),
         venue: concertData.venue,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       });
-
-      const savedConcert = await queryRunner.manager.save(concert);
 
       const tickets: Partial<Ticket>[] = [];
 
       for (let i = 1; i <= concertData.tickets; i++) {
         tickets.push({
-          concertId: savedConcert.id,
+          concertId: concert.id,
           seatNumber: `A${i}`,
           status: TicketStatus.AVAILABLE,
           price: concertData.ticketPrice,
@@ -168,10 +160,9 @@ export class ConcertsService {
       }
 
       await queryRunner.manager.save(Ticket, tickets);
-
       await queryRunner.commitTransaction();
 
-      return savedConcert;
+      return concert;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -206,7 +197,6 @@ export class ConcertsService {
         concertId,
         updatedCount,
       );
-
       await this.redisService.set(key, updatedCount.toString(), 300);
     }
   }
