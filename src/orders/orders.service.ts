@@ -47,7 +47,7 @@ export class OrdersService {
     });
 
     if (!order) {
-      throw new NotFoundException(`Замовлення з ID ${id} не знайдено`);
+      throw new NotFoundException(`Order with ID ${id} not found`);
     }
 
     return order;
@@ -61,7 +61,7 @@ export class OrdersService {
     });
 
     if (!cart || !cart.items || cart.items.length === 0) {
-      throw new BadRequestException('Кошик порожній');
+      throw new BadRequestException('Cart is empty');
     }
 
     // Розпочинаємо транзакцію
@@ -77,9 +77,7 @@ export class OrdersService {
       );
 
       if (expiredItems.length > 0) {
-        throw new BadRequestException(
-          'Деякі квитки мають прострочену резервацію',
-        );
+        throw new BadRequestException('Some tickets have expired reservations');
       }
 
       // Створюємо нове замовлення
@@ -142,9 +140,13 @@ export class OrdersService {
   async cancelOrder(id: string, userId: string): Promise<Order> {
     const order = await this.findOne(id, userId);
 
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${id} not found`);
+    }
+
     if (order.status !== OrderStatus.PENDING) {
       throw new BadRequestException(
-        'Можна скасувати тільки замовлення в статусі "очікування оплати"',
+        'You can only cancel orders in the "pending" status',
       );
     }
 
@@ -188,12 +190,12 @@ export class OrdersService {
     });
 
     if (!order) {
-      throw new NotFoundException(`Замовлення з ID ${id} не знайдено`);
+      throw new NotFoundException(`Order with ID ${id} not found`);
     }
 
     if (order.status !== OrderStatus.PENDING) {
       throw new BadRequestException(
-        'Неможливо оплатити замовлення в поточному статусі',
+        'You cannot pay for an order in the current status',
       );
     }
 

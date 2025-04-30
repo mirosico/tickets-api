@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { InjectQueue } from '@nestjs/bull';
@@ -28,11 +28,11 @@ export class TicketQueueService {
       where: { id: ticketId },
     });
     if (!ticket) {
-      throw new Error('Квиток не знайдено');
+      throw new NotFoundException('Ticket not found');
     }
 
     if (ticket.status !== TicketStatus.AVAILABLE) {
-      throw new Error('Квиток недоступний для бронювання');
+      throw new Error('Ticket is not available for booking');
     }
 
     console.log('Adding to queue', ticketId, ticket.status, userId);
@@ -41,7 +41,7 @@ export class TicketQueueService {
     const lockAcquired = await this.redisService.setLock(lockKey, 10);
 
     if (!lockAcquired) {
-      throw new Error('Квиток зараз обробляється іншим запитом');
+      throw new Error('Ticket is being processed by another request');
     }
 
     try {
@@ -98,7 +98,7 @@ export class TicketQueueService {
     });
 
     if (!queueItem) {
-      throw new Error('Елемент черги не знайдено');
+      throw new NotFoundException('Queue item not found');
     }
 
     return queueItem.position;
@@ -109,7 +109,7 @@ export class TicketQueueService {
       where: { id: queueItemId },
     });
     if (!queueItem) {
-      throw new Error('Елемент черги не знайдено');
+      throw new NotFoundException('Queue item not found');
     }
     const count = await this.redisService.get(getQueueKey(queueItem.ticketId));
     return count ? parseInt(count, 10) : 0;
@@ -125,7 +125,7 @@ export class TicketQueueService {
     });
 
     if (!queueItem) {
-      throw new Error('Елемент черги не знайдено');
+      throw new NotFoundException('Queue item not found');
     }
 
     queueItem.status = status;
